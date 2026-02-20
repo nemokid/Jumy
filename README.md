@@ -1,6 +1,7 @@
 # Jumy - Private Messaging
 
-A privacy-first messaging web app where we know nothing about you.
+A privacy-first messaging web app where we know nothing about you. 
+It's just about me and you.
 
 ![Jumy Logo](public/icon.png)
 
