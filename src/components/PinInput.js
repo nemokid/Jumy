@@ -22,8 +22,11 @@ export default function PinInput({ value, onChange, onComplete, disabled }) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    if (newPin.length === 5 && !newPin.includes('') && newPin.split('').every(d => d !== '')) {
-      onComplete?.(newPin);
+    // Delay onComplete to let the UI update first
+    if (newPin.length === 5 && newPin.split('').every(d => d !== '')) {
+      setTimeout(() => {
+        onComplete?.(newPin);
+      }, 150);
     }
   };
 
