@@ -44,6 +44,8 @@ export default function Register({ onSuccess, onBack }) {
   };
 
   const handleConfirmPinComplete = async (enteredConfirmPin) => {
+    setConfirmPin(enteredConfirmPin);
+    
     if (enteredConfirmPin !== pin) {
       setError('PINs do not match');
       setPin('');
@@ -52,8 +54,15 @@ export default function Register({ onSuccess, onBack }) {
       return;
     }
     
-    if (!termsAccepted) {
-      setError('Please accept the terms');
+    // Don't auto-submit, let user check the box and click a button
+  };
+
+  const handleRegister = async () => {
+    if (confirmPin !== pin) {
+      setError('PINs do not match');
+      setPin('');
+      setConfirmPin('');
+      setStep(2);
       return;
     }
     
@@ -137,6 +146,14 @@ export default function Register({ onSuccess, onBack }) {
               I understand that Jumy cannot recover my credentials, and messages are deleted after 24 hours.
             </span>
           </label>
+          
+          <button
+            onClick={handleRegister}
+            disabled={!termsAccepted || !confirmPin || confirmPin.length < 5 || loading}
+            className="w-full mt-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300 text-white font-medium rounded-xl transition-colors"
+          >
+            {loading ? 'Creating account...' : 'Create Account'}
+          </button>
         </div>
       )}
       
