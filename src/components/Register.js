@@ -43,19 +43,7 @@ export default function Register({ onSuccess, onBack }) {
     setStep(3);
   };
 
-  const handleConfirmPinComplete = async (enteredConfirmPin) => {
-    setConfirmPin(enteredConfirmPin);
-    
-    if (enteredConfirmPin !== pin) {
-      setError('PINs do not match');
-      setPin('');
-      setConfirmPin('');
-      setStep(2);
-      return;
-    }
-    
-    // Don't auto-submit, let user check the box and click a button
-  };
+
 
   const handleRegister = async () => {
     if (confirmPin !== pin) {
@@ -133,7 +121,7 @@ export default function Register({ onSuccess, onBack }) {
       {step === 3 && (
         <div>
           <p className="text-gray-500 text-center mb-6">Confirm your PIN</p>
-          <PinInput value={confirmPin} onChange={setConfirmPin} onComplete={handleConfirmPinComplete} disabled={loading} />
+          <PinInput value={confirmPin} onChange={setConfirmPin} disabled={loading} />
           
           <label className="flex items-start gap-3 mt-6 cursor-pointer">
             <input
