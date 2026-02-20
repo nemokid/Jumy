@@ -13,14 +13,12 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Username and message ID required' }, { status: 400 });
     }
     
-    // Get message to check for attachment
     const message = await sql`
       SELECT attachment_url FROM messages 
       WHERE id = ${messageId} AND recipient_hash = ${usernameHash}
     `;
     
     if (message.rows.length > 0) {
-      // Delete attachment from blob storage if exists
       if (message.rows[0].attachment_url) {
         try {
           await del(message.rows[0].attachment_url);
@@ -29,7 +27,6 @@ export async function POST(request) {
         }
       }
       
-      // Delete message
       await sql`
         DELETE FROM messages 
         WHERE id = ${messageId} AND recipient_hash = ${usernameHash}

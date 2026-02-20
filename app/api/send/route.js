@@ -7,7 +7,8 @@ export async function POST(request) {
   
   try {
     const { 
-      senderHash, 
+      senderHash,
+      senderEncrypted,
       recipientHash, 
       content, 
       attachmentUrl, 
@@ -19,22 +20,20 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Sender, recipient, and content required' }, { status: 400 });
     }
     
-    // Check if recipient exists (silently discard if not)
     const recipient = await sql`
       SELECT id FROM users WHERE username_hash = ${recipientHash}
     `;
     
     if (recipient.rows.length === 0) {
-      // Silently accept but don't store (as per spec)
       await logEvent('message_discarded', clientIp, senderHash, null, 'recipient_not_found');
       return NextResponse.json({ success: true, messageId: -1 });
     }
     
-    // Insert message (content is already encrypted client-side)
     const result = await sql`
       INSERT INTO messages (
         recipient_hash, 
-        sender_hash, 
+        sender_hash,
+        sender_encrypted,
         content, 
         attachment_url,
         attachment_name,
@@ -43,11 +42,12 @@ export async function POST(request) {
       )
       VALUES (
         ${recipientHash}, 
-        ${senderHash}, 
+        ${senderHash},
+        ${senderEncrypted || null},
         ${content}, 
-        ${attachmentUrl},
-        ${attachmentName},
-        ${attachmentSize},
+        ${attachmentUrl || null},
+        ${attachmentName || null},
+        ${attachmentSize || null},
         NOW() + INTERVAL '24 hours'
       )
       RETURNING id

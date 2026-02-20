@@ -21,7 +21,7 @@ export default function Login({ onProceed, onBack, onRegister }) {
     
     try {
       const { usernameHash } = await login(username);
-      onProceed(usernameHash);
+      onProceed(usernameHash, username);
     } catch (err) {
       setError('Username not found');
     } finally {

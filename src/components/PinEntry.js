@@ -5,7 +5,7 @@ import Image from 'next/image';
 import PinInput from './PinInput';
 import { verifyPin } from '@/src/lib/api';
 
-export default function PinEntry({ usernameHash, onSuccess, onBack }) {
+export default function PinEntry({ usernameHash, username, onSuccess, onBack }) {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +17,8 @@ export default function PinEntry({ usernameHash, onSuccess, onBack }) {
       onSuccess({
         usernameHash,
         pinHash: result.pinHash,
-        fakeMode: result.fakeMode
+        fakeMode: result.fakeMode,
+        username
       });
     } catch (err) {
       console.error('PIN verification error:', err);

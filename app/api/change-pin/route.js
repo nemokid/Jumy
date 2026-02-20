@@ -12,7 +12,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'All fields required' }, { status: 400 });
     }
     
-    // Verify old PIN
     const user = await sql`
       SELECT pin_hash FROM users WHERE username_hash = ${usernameHash}
     `;
@@ -21,7 +20,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
     
-    // Update PIN
     await sql`
       UPDATE users SET pin_hash = ${newPinHash} WHERE username_hash = ${usernameHash}
     `;

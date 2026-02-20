@@ -8,7 +8,7 @@ import PinEntry from '@/src/components/PinEntry';
 import AppShell from '@/src/components/AppShell';
 
 export default function Home() {
-  const [view, setView] = useState('welcome'); // welcome, register, login, pin, app
+  const [view, setView] = useState('welcome');
   const [session, setSession] = useState(null);
   const [pendingLogin, setPendingLogin] = useState(null);
 
@@ -17,8 +17,8 @@ export default function Home() {
     setView('app');
   }, []);
 
-  const handleLoginStart = useCallback((usernameHash) => {
-    setPendingLogin(usernameHash);
+  const handleLoginStart = useCallback((usernameHash, username) => {
+    setPendingLogin({ usernameHash, username });
     setView('pin');
   }, []);
 
@@ -70,7 +70,8 @@ export default function Home() {
         
         {view === 'pin' && pendingLogin && (
           <PinEntry 
-            usernameHash={pendingLogin} 
+            usernameHash={pendingLogin.usernameHash}
+            username={pendingLogin.username}
             onSuccess={handlePinVerified} 
             onBack={() => setView('login')} 
           />

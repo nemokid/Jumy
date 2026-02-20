@@ -9,17 +9,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Username hash required' }, { status: 400 });
     }
     
-    // Delete expired messages first
     await sql`
       DELETE FROM messages 
       WHERE recipient_hash = ${usernameHash} AND expires_at <= NOW()
     `;
     
-    // Get valid messages (content stays encrypted - decryption happens client-side)
     const result = await sql`
       SELECT 
         id, 
-        sender_hash, 
+        sender_hash,
+        sender_encrypted,
         content, 
         attachment_url,
         attachment_name,
@@ -34,7 +33,8 @@ export async function POST(request) {
     const messages = result.rows.map(row => ({
       id: row.id,
       senderHash: row.sender_hash,
-      content: row.content, // Still encrypted
+      senderEncrypted: row.sender_encrypted,
+      content: row.content,
       attachmentUrl: row.attachment_url,
       attachmentName: row.attachment_name,
       attachmentSize: row.attachment_size,

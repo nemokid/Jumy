@@ -43,8 +43,6 @@ export default function Register({ onSuccess, onBack }) {
     setStep(3);
   };
 
-
-
   const handleRegister = async () => {
     if (confirmPin !== pin) {
       setError('PINs do not match');
@@ -59,7 +57,7 @@ export default function Register({ onSuccess, onBack }) {
     
     try {
       const { usernameHash, pinHash } = await register(username, pin);
-      onSuccess({ usernameHash, pinHash, fakeMode: false });
+      onSuccess({ usernameHash, pinHash, fakeMode: false, username });
     } catch (err) {
       setError(err.message || 'Registration failed');
       setStep(1);
@@ -142,12 +140,6 @@ export default function Register({ onSuccess, onBack }) {
           >
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
-        </div>
-      )}
-      
-      {loading && step === 3 && (
-        <div className="flex justify-center mt-4">
-          <div className="w-6 h-6 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       

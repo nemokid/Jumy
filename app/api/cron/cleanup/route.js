@@ -3,20 +3,17 @@ import { del } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
-  // Verify cron secret (optional but recommended)
   const authHeader = request.headers.get('authorization');
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   
   try {
-    // Get expired messages with attachments
     const expired = await sql`
       SELECT id, attachment_url FROM messages 
       WHERE expires_at <= NOW()
     `;
     
-    // Delete attachments from blob storage
     for (const row of expired.rows) {
       if (row.attachment_url) {
         try {
@@ -27,13 +24,8 @@ export async function GET(request) {
       }
     }
     
-    // Delete expired messages
-    const result = await sql`
-      DELETE FROM messages 
-      WHERE expires_at <= NOW()
-    `;
+    await sql`DELETE FROM messages WHERE expires_at <= NOW()`;
     
-    // Log cleanup
     if (expired.rows.length > 0) {
       await sql`
         INSERT INTO logs (event_type, client_ip, details)
@@ -41,10 +33,7 @@ export async function GET(request) {
       `;
     }
     
-    return NextResponse.json({ 
-      success: true, 
-      deleted: expired.rows.length 
-    });
+    return NextResponse.json({ success: true, deleted: expired.rows.length });
   } catch (error) {
     console.error('Cleanup error:', error);
     return NextResponse.json({ error: 'Cleanup failed' }, { status: 500 });

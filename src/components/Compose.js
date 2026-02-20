@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { sendMessage } from '@/src/lib/api';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 function formatFileSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
@@ -11,8 +11,8 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-export default function Compose({ session, onSent, onCancel }) {
-  const [recipient, setRecipient] = useState('');
+export default function Compose({ session, onSent, onCancel, replyTo }) {
+  const [recipient, setRecipient] = useState(replyTo || '');
   const [content, setContent] = useState('');
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
@@ -57,7 +57,8 @@ export default function Compose({ session, onSent, onCancel }) {
     
     try {
       await sendMessage(
-        session.usernameHash, 
+        session.usernameHash,
+        session.username,
         recipient, 
         content || '(file attached)', 
         file, 
@@ -93,7 +94,9 @@ export default function Compose({ session, onSent, onCancel }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">New Message</h1>
+      <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+        {replyTo ? `Reply to ${replyTo}` : 'New Message'}
+      </h1>
       
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
@@ -111,11 +114,14 @@ export default function Compose({ session, onSent, onCancel }) {
             placeholder="Enter recipient's username"
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all"
             autoComplete="off"
-            autoFocus
+            autoFocus={!replyTo}
+            readOnly={!!replyTo}
           />
-          <p className="text-xs text-gray-400 mt-1">
-            You must know the exact username. There is no contact list.
-          </p>
+          {!replyTo && (
+            <p className="text-xs text-gray-400 mt-1">
+              You must know the exact username. There is no contact list.
+            </p>
+          )}
         </div>
         
         <div>
@@ -126,10 +132,10 @@ export default function Compose({ session, onSent, onCancel }) {
             placeholder="Write your message..."
             rows={5}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all resize-none"
+            autoFocus={!!replyTo}
           />
         </div>
         
-        {/* File Attachment */}
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-2">Attachment (optional)</label>
           

@@ -13,7 +13,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Username and PIN required' }, { status: 400 });
     }
     
-    // Verify PIN
     const user = await sql`
       SELECT pin_hash FROM users WHERE username_hash = ${usernameHash}
     `;
@@ -22,13 +21,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
     
-    // Get all attachments for this user's messages
     const attachments = await sql`
       SELECT attachment_url FROM messages 
       WHERE recipient_hash = ${usernameHash} AND attachment_url IS NOT NULL
     `;
     
-    // Delete all attachments from blob storage
     for (const row of attachments.rows) {
       try {
         await del(row.attachment_url);
@@ -37,15 +34,8 @@ export async function POST(request) {
       }
     }
     
-    // Delete all messages for this user
-    await sql`
-      DELETE FROM messages WHERE recipient_hash = ${usernameHash}
-    `;
-    
-    // Delete user account
-    await sql`
-      DELETE FROM users WHERE username_hash = ${usernameHash}
-    `;
+    await sql`DELETE FROM messages WHERE recipient_hash = ${usernameHash}`;
+    await sql`DELETE FROM users WHERE username_hash = ${usernameHash}`;
     
     await logEvent('account_wiped', clientIp, usernameHash);
     

@@ -42,7 +42,9 @@ export default function PinInput({ value, onChange, onComplete, disabled }) {
     if (pastedData) {
       onChange(pastedData.padEnd(5, ''));
       if (pastedData.length === 5) {
-        onComplete?.(pastedData);
+        setTimeout(() => {
+          onComplete?.(pastedData);
+        }, 150);
       }
     }
   };

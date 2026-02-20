@@ -36,7 +36,7 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-export default function Inbox({ session, onCompose }) {
+export default function Inbox({ session, onCompose, onReply }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -72,18 +72,14 @@ export default function Inbox({ session, onCompose }) {
     
     setDownloadingId(message.id);
     try {
-      // Fetch encrypted file
       const response = await fetch(message.attachmentUrl);
       const encryptedBuffer = await response.arrayBuffer();
-      
-      // Decrypt client-side
       const decryptedBuffer = await decryptFile(encryptedBuffer, session.usernameHash);
       
       if (!decryptedBuffer) {
         throw new Error('Decryption failed');
       }
       
-      // Create download
       const blob = arrayBufferToBlob(decryptedBuffer, 'application/octet-stream');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -156,7 +152,7 @@ export default function Inbox({ session, onCompose }) {
             <div key={message.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
               <div className="flex justify-between items-start mb-2">
                 <span className="text-sm font-medium text-gray-900">
-                  {message.sender === 'jumy' ? '🔒 Jumy' : 'Anonymous'}
+                  {message.sender === 'Jumy' ? '🔒 Jumy' : message.sender}
                 </span>
                 <span className="text-xs text-gray-400">{formatTimeAgo(message.createdAt)}</span>
               </div>
@@ -194,16 +190,30 @@ export default function Inbox({ session, onCompose }) {
               )}
               
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <button
-                  onClick={() => handleDelete(message.id)}
-                  className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                  Delete
-                </button>
+                <div className="flex gap-2">
+                  {message.sender !== 'Jumy' && message.sender !== 'Unknown' && (
+                    <button
+                      onClick={() => onReply(message.sender)}
+                      className="flex items-center gap-1 text-sm text-violet-600 hover:text-violet-700"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="9 17 4 12 9 7"/>
+                        <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                      </svg>
+                      Reply
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(message.id)}
+                    className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    Delete
+                  </button>
+                </div>
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10"/>

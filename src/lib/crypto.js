@@ -1,9 +1,6 @@
 // Client-side encryption utilities using Web Crypto API
 // All encryption happens in the browser - server never sees plaintext
 
-/**
- * Hash a value using SHA-256
- */
 export async function hashValue(value) {
   const encoder = new TextEncoder();
   const data = encoder.encode(value.toLowerCase().trim());
@@ -12,9 +9,6 @@ export async function hashValue(value) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Derive an encryption key from a password/hash using PBKDF2
- */
 async function deriveKey(password, salt) {
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
@@ -39,10 +33,6 @@ async function deriveKey(password, salt) {
   );
 }
 
-/**
- * Encrypt text content
- * Returns base64 encoded string with IV prepended
- */
 export async function encryptText(plaintext, recipientHash) {
   const key = await deriveKey(recipientHash, 'jumy-salt-v1');
   const encoder = new TextEncoder();
@@ -54,7 +44,6 @@ export async function encryptText(plaintext, recipientHash) {
     encoder.encode(plaintext)
   );
   
-  // Combine IV + encrypted data
   const combined = new Uint8Array(iv.length + encrypted.byteLength);
   combined.set(iv);
   combined.set(new Uint8Array(encrypted), iv.length);
@@ -62,9 +51,6 @@ export async function encryptText(plaintext, recipientHash) {
   return btoa(String.fromCharCode(...combined));
 }
 
-/**
- * Decrypt text content
- */
 export async function decryptText(encryptedBase64, recipientHash) {
   try {
     const key = await deriveKey(recipientHash, 'jumy-salt-v1');
@@ -88,10 +74,6 @@ export async function decryptText(encryptedBase64, recipientHash) {
   }
 }
 
-/**
- * Encrypt a file (ArrayBuffer)
- * Returns encrypted ArrayBuffer with IV prepended
- */
 export async function encryptFile(fileBuffer, recipientHash) {
   const key = await deriveKey(recipientHash, 'jumy-file-salt-v1');
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -102,7 +84,6 @@ export async function encryptFile(fileBuffer, recipientHash) {
     fileBuffer
   );
   
-  // Combine IV + encrypted data
   const combined = new Uint8Array(iv.length + encrypted.byteLength);
   combined.set(iv);
   combined.set(new Uint8Array(encrypted), iv.length);
@@ -110,9 +91,6 @@ export async function encryptFile(fileBuffer, recipientHash) {
   return combined.buffer;
 }
 
-/**
- * Decrypt a file (ArrayBuffer)
- */
 export async function decryptFile(encryptedBuffer, recipientHash) {
   try {
     const key = await deriveKey(recipientHash, 'jumy-file-salt-v1');
@@ -134,9 +112,6 @@ export async function decryptFile(encryptedBuffer, recipientHash) {
   }
 }
 
-/**
- * Convert File to ArrayBuffer
- */
 export function fileToArrayBuffer(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -146,9 +121,6 @@ export function fileToArrayBuffer(file) {
   });
 }
 
-/**
- * Convert ArrayBuffer to Blob for download
- */
 export function arrayBufferToBlob(buffer, mimeType) {
   return new Blob([buffer], { type: mimeType });
 }

@@ -53,6 +53,7 @@ const NavIcon = {
 
 export default function AppShell({ session, onLogout }) {
   const [view, setView] = useState('inbox');
+  const [replyTo, setReplyTo] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -72,9 +73,9 @@ export default function AppShell({ session, onLogout }) {
   const renderContent = () => {
     switch (view) {
       case 'inbox':
-        return <Inbox session={session} onCompose={() => setView('compose')} />;
+        return <Inbox session={session} onCompose={() => setView('compose')} onReply={(username) => { setReplyTo(username); setView('compose'); }} />;
       case 'compose':
-        return <Compose session={session} onSent={() => setView('inbox')} onCancel={() => setView('inbox')} />;
+        return <Compose session={session} onSent={() => { setView('inbox'); setReplyTo(null); }} onCancel={() => { setView('inbox'); setReplyTo(null); }} replyTo={replyTo} />;
       case 'pin':
         return <ChangePin session={session} onSuccess={() => setView('inbox')} />;
       case 'help':
@@ -82,7 +83,7 @@ export default function AppShell({ session, onLogout }) {
       case 'wipe':
         return <Wipe session={session} onWiped={onLogout} />;
       default:
-        return <Inbox session={session} onCompose={() => setView('compose')} />;
+        return <Inbox session={session} onCompose={() => setView('compose')} onReply={(username) => { setReplyTo(username); setView('compose'); }} />;
     }
   };
 

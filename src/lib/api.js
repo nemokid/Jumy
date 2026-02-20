@@ -1,4 +1,3 @@
-// API client for Jumy
 import { hashValue, encryptText, decryptText, encryptFile, fileToArrayBuffer } from './crypto';
 
 const API_BASE = '/api';
@@ -55,11 +54,10 @@ export async function verifyPin(usernameHash, pin) {
 
 export async function getInbox(usernameHash, fakeMode) {
   if (fakeMode) {
-    // Return fake welcome message
     return {
       messages: [{
         id: 0,
-        sender: 'jumy',
+        sender: 'Jumy',
         content: 'Hi, nice for you to be here. We hope you enjoy the app.',
         createdAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -77,25 +75,37 @@ export async function getInbox(usernameHash, fakeMode) {
   
   // Decrypt messages client-side
   const decryptedMessages = await Promise.all(
-    (data.messages || []).map(async (msg) => ({
-      ...msg,
-      content: await decryptText(msg.content, usernameHash)
-    }))
+    (data.messages || []).map(async (msg) => {
+      let senderUsername = 'Unknown';
+      if (msg.senderEncrypted) {
+        try {
+          senderUsername = await decryptText(msg.senderEncrypted, usernameHash);
+        } catch (e) {
+          console.error('Failed to decrypt sender:', e);
+        }
+      }
+      
+      return {
+        ...msg,
+        sender: senderUsername,
+        content: await decryptText(msg.content, usernameHash)
+      };
+    })
   );
   
   return { messages: decryptedMessages };
 }
 
-export async function sendMessage(senderHash, recipientUsername, content, file, fakeMode) {
+export async function sendMessage(senderHash, senderUsername, recipientUsername, content, file, fakeMode) {
   if (fakeMode) {
-    // In fake mode, pretend to send but don't actually do anything
     return { success: true, messageId: 0 };
   }
   
   const recipientHash = await hashValue(recipientUsername);
   
-  // Encrypt content client-side
+  // Encrypt content and sender username client-side
   const encryptedContent = await encryptText(content, recipientHash);
+  const encryptedSender = await encryptText(senderUsername, recipientHash);
   
   // Handle file attachment if present
   let attachmentUrl = null;
@@ -103,11 +113,9 @@ export async function sendMessage(senderHash, recipientUsername, content, file, 
   let attachmentSize = null;
   
   if (file) {
-    // Encrypt file client-side
     const fileBuffer = await fileToArrayBuffer(file);
     const encryptedFile = await encryptFile(fileBuffer, recipientHash);
     
-    // Upload encrypted file
     const uploadResponse = await fetch(`${API_BASE}/upload`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/octet-stream' },
@@ -129,6 +137,7 @@ export async function sendMessage(senderHash, recipientUsername, content, file, 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       senderHash,
+      senderEncrypted: encryptedSender,
       recipientHash,
       content: encryptedContent,
       attachmentUrl,

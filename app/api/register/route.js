@@ -12,7 +12,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Username and PIN hashes required' }, { status: 400 });
     }
     
-    // Check if username already exists
     const existing = await sql`
       SELECT id FROM users WHERE username_hash = ${usernameHash}
     `;
@@ -21,7 +20,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Username already exists' }, { status: 409 });
     }
     
-    // Create user
     await sql`
       INSERT INTO users (username_hash, pin_hash)
       VALUES (${usernameHash}, ${pinHash})

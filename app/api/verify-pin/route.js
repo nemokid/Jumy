@@ -17,7 +17,6 @@ export async function POST(request) {
     `;
     
     if (result.rows.length === 0) {
-      // User doesn't exist, return fake mode
       await logEvent('login_attempt', clientIp, usernameHash, null, 'fake_login_no_user');
       return NextResponse.json({ authenticated: true, fakeMode: true });
     }
@@ -32,7 +31,6 @@ export async function POST(request) {
       isValidPin ? 'successful' : 'fake_login_wrong_pin'
     );
     
-    // Always return success (fake mode if wrong PIN)
     return NextResponse.json({ 
       authenticated: true, 
       fakeMode: !isValidPin 
