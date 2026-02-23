@@ -75,23 +75,34 @@ export async function getInbox(usernameHash, fakeMode) {
   
   // Decrypt messages client-side
   const decryptedMessages = await Promise.all(
-    (data.messages || []).map(async (msg) => {
-      let senderUsername = 'Unknown';
-      if (msg.senderEncrypted) {
-        try {
-          senderUsername = await decryptText(msg.senderEncrypted, usernameHash);
-        } catch (e) {
-          console.error('Failed to decrypt sender:', e);
+      (data.messages || []).map(async (msg) => {
+        let senderUsername = 'Unknown';
+        if (msg.senderEncrypted) {
+          try {
+            senderUsername = await decryptText(msg.senderEncrypted, usernameHash);
+          } catch (e) {
+            console.error('Failed to decrypt sender:', e);
+          }
         }
-      }
-      
-      return {
-        ...msg,
-        sender: senderUsername,
-        content: await decryptText(msg.content, usernameHash)
-      };
-    })
-  );
+        
+        let attachmentName = null;
+        if (msg.attachmentName) {
+          try {
+            attachmentName = await decryptText(msg.attachmentName, usernameHash);
+          } catch (e) {
+            console.error('Failed to decrypt attachment name:', e);
+            attachmentName = 'file';
+          }
+        }
+        
+        return {
+          ...msg,
+          sender: senderUsername,
+          attachmentName,
+          content: await decryptText(msg.content, usernameHash)
+        };
+      })
+    );
   
   return { messages: decryptedMessages };
 }
@@ -128,7 +139,7 @@ export async function sendMessage(senderHash, senderUsername, recipientUsername,
     
     const uploadData = await uploadResponse.json();
     attachmentUrl = uploadData.url;
-    attachmentName = file.name;
+    attachmentName = await encryptText(file.name, recipientHash);
     attachmentSize = file.size;
   }
   
