@@ -1,14 +1,30 @@
 import { sql } from '@vercel/postgres';
+import { del } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
     const { usernameHash } = await request.json();
-    
+
     if (!usernameHash) {
       return NextResponse.json({ error: 'Username hash required' }, { status: 400 });
     }
-    
+
+    const expiredMessages = await sql`
+      SELECT attachment_url FROM messages
+      WHERE recipient_hash = ${usernameHash} AND expires_at <= NOW()
+    `;
+
+    for (const row of expiredMessages.rows) {
+      if (row.attachment_url) {
+        try {
+          await del(row.attachment_url);
+        } catch (e) {
+          console.error('Failed to delete blob:', e);
+        }
+      }
+    }
+
     await sql`
       DELETE FROM messages
       WHERE recipient_hash = ${usernameHash} AND expires_at <= NOW()
