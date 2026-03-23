@@ -10,9 +10,11 @@ export async function POST(request) {
     }
     
     await sql`
-      DELETE FROM messages 
+      DELETE FROM messages
       WHERE recipient_hash = ${usernameHash} AND expires_at <= NOW()
     `;
+
+    await sql`UPDATE users SET last_active = NOW() WHERE username_hash = ${usernameHash}`;
     
     const result = await sql`
       SELECT 

@@ -55,11 +55,13 @@ export async function POST(request) {
     
     const messageId = result.rows[0].id;
     
+    await sql`UPDATE users SET last_active = NOW() WHERE username_hash = ${senderHash}`;
+
     await logEvent(
-      'message_sent', 
-      clientIp, 
-      senderHash, 
-      messageId, 
+      'message_sent',
+      clientIp,
+      senderHash,
+      messageId,
       `to:${recipientHash.substring(0, 8)}...`
     );
     
