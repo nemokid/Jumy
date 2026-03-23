@@ -34,6 +34,12 @@ export default function AdminDashboard() {
   const [actionError, setActionError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
+  const [accountUsername, setAccountUsername] = useState('');
+  const [accountMsg, setAccountMsg] = useState('');
+  const [accountError, setAccountError] = useState('');
+  const [accountLoading, setAccountLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'clear' | 'delete'
+
   const getCredentials = useCallback(() => {
     const adminUsernameHash = sessionStorage.getItem('adminUsernameHash');
     const adminPinHash = sessionStorage.getItem('adminPinHash');
@@ -124,6 +130,85 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAccountAction = async (action) => {
+    if (!accountUsername.trim()) {
+      setAccountError('Please enter a username');
+      return;
+    }
+
+    const { adminUsernameHash, adminPinHash } = getCredentials();
+    if (!adminUsernameHash || !adminPinHash) {
+      router.replace('/admin');
+      return;
+    }
+
+    if ((action === 'clear' || action === 'delete') && pendingAction !== action) {
+      setPendingAction(action);
+      return;
+    }
+
+    setAccountLoading(true);
+    setAccountMsg('');
+    setAccountError('');
+    setPendingAction(null);
+
+    try {
+      const targetUsernameHash = await hashValue(accountUsername);
+
+      if (action === 'export') {
+        const res = await fetch('/api/admin/export-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ adminUsernameHash, pinHash: adminPinHash, targetUsernameHash }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          setAccountError(data.error || 'Export failed');
+          return;
+        }
+
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jumy-export-${accountUsername.trim().toLowerCase()}-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setAccountMsg(`Exported ${data.messages.length} message(s) for "${accountUsername}".`);
+        setAccountUsername('');
+        return;
+      }
+
+      const endpoint = action === 'clear' ? '/api/admin/clear-account' : '/api/admin/delete-account';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminUsernameHash, pinHash: adminPinHash, targetUsernameHash }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setAccountError(data.error || 'Action failed');
+        return;
+      }
+
+      const data = await res.json();
+      if (action === 'clear') {
+        setAccountMsg(`Cleared ${data.deletedMessages} message(s) for "${accountUsername}".`);
+      } else {
+        setAccountMsg(`Account "${accountUsername}" has been deleted.`);
+      }
+      setAccountUsername('');
+      fetchStats();
+    } catch (err) {
+      setAccountError('Something went wrong');
+    } finally {
+      setAccountLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     sessionStorage.removeItem('adminUsernameHash');
     sessionStorage.removeItem('adminPinHash');
@@ -198,6 +283,85 @@ export default function AdminDashboard() {
               value={stats ? formatBytes(stats.storage.totalBytes) : null}
               sub="live attachments only"
             />
+          </div>
+        </section>
+
+        {/* Account Management */}
+        <section>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Account Management</h2>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <p className="text-sm text-gray-500 mb-4">
+              Enter the exact account username to clear its messages, delete it entirely, or export its data.
+            </p>
+
+            {accountMsg && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+                {accountMsg}
+              </div>
+            )}
+            {accountError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+                {accountError}
+              </div>
+            )}
+
+            <input
+              type="text"
+              value={accountUsername}
+              onChange={(e) => { setAccountUsername(e.target.value); setAccountMsg(''); setAccountError(''); setPendingAction(null); }}
+              placeholder="Enter username"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all text-sm mb-3"
+              autoComplete="off"
+            />
+
+            {pendingAction && (
+              <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                {pendingAction === 'clear'
+                  ? `This will permanently delete all messages for "${accountUsername}". The account itself will remain.`
+                  : `This will permanently delete the account "${accountUsername}" and all its messages.`
+                }
+                {' '}Are you sure?
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => handleAccountAction(pendingAction)}
+                    disabled={accountLoading}
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-xs font-medium rounded-lg transition-colors"
+                  >
+                    {accountLoading ? 'Processing…' : 'Confirm'}
+                  </button>
+                  <button
+                    onClick={() => setPendingAction(null)}
+                    className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg border border-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleAccountAction('clear')}
+                disabled={accountLoading || !!pendingAction}
+                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                Clear Messages
+              </button>
+              <button
+                onClick={() => handleAccountAction('delete')}
+                disabled={accountLoading || !!pendingAction}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                Delete Account
+              </button>
+              <button
+                onClick={() => handleAccountAction('export')}
+                disabled={accountLoading || !!pendingAction}
+                className="flex-1 py-2.5 bg-white hover:bg-gray-50 disabled:opacity-50 text-gray-700 text-sm font-medium rounded-xl border border-gray-200 transition-colors"
+              >
+                {accountLoading ? 'Exporting…' : 'Export'}
+              </button>
+            </div>
           </div>
         </section>
 
