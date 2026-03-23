@@ -22,18 +22,22 @@ export async function POST(request) {
     }
     
     const isValidPin = result.rows[0].pin_hash === pinHash;
-    
+
+    if (isValidPin) {
+      await sql`UPDATE users SET last_active = NOW() WHERE username_hash = ${usernameHash}`;
+    }
+
     await logEvent(
-      'login_attempt', 
-      clientIp, 
-      usernameHash, 
-      null, 
+      'login_attempt',
+      clientIp,
+      usernameHash,
+      null,
       isValidPin ? 'successful' : 'fake_login_wrong_pin'
     );
-    
-    return NextResponse.json({ 
-      authenticated: true, 
-      fakeMode: !isValidPin 
+
+    return NextResponse.json({
+      authenticated: true,
+      fakeMode: !isValidPin
     });
   } catch (error) {
     console.error('Verify PIN error:', error);

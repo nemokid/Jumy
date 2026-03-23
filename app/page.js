@@ -40,12 +40,28 @@ const features = [
   },
 ];
 
+function consumePendingRecipient() {
+  try {
+    const recipient = sessionStorage.getItem('pendingRecipient');
+    if (recipient) {
+      sessionStorage.removeItem('pendingRecipient');
+      return recipient;
+    }
+  } catch {
+    // sessionStorage unavailable (SSR or private mode edge case)
+  }
+  return null;
+}
+
 export default function Home() {
   const [view, setView] = useState('welcome');
   const [session, setSession] = useState(null);
   const [pendingLogin, setPendingLogin] = useState(null);
+  const [initialRecipient, setInitialRecipient] = useState(null);
 
   const handleRegisterSuccess = useCallback((sessionData) => {
+    const recipient = consumePendingRecipient();
+    setInitialRecipient(recipient);
     setSession(sessionData);
     setView('app');
   }, []);
@@ -56,6 +72,8 @@ export default function Home() {
   }, []);
 
   const handlePinVerified = useCallback((sessionData) => {
+    const recipient = consumePendingRecipient();
+    setInitialRecipient(recipient);
     setSession(sessionData);
     setPendingLogin(null);
     setView('app');
@@ -64,6 +82,7 @@ export default function Home() {
   const handleLogout = useCallback(() => {
     setSession(null);
     setPendingLogin(null);
+    setInitialRecipient(null);
     setView('welcome');
   }, []);
 
@@ -73,7 +92,7 @@ export default function Home() {
   }, []);
 
   if (view === 'app' && session) {
-    return <AppShell session={session} onLogout={handleLogout} />;
+    return <AppShell session={session} onLogout={handleLogout} initialRecipient={initialRecipient} />;
   }
 
   if (view !== 'welcome') {

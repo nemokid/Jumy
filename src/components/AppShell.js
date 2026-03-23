@@ -51,9 +51,9 @@ const NavIcon = {
   ),
 };
 
-export default function AppShell({ session, onLogout }) {
-  const [view, setView] = useState('inbox');
-  const [replyTo, setReplyTo] = useState(null);
+export default function AppShell({ session, onLogout, initialRecipient }) {
+  const [view, setView] = useState(initialRecipient ? 'compose' : 'inbox');
+  const [replyTo, setReplyTo] = useState(initialRecipient || null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
